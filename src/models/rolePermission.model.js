@@ -8,12 +8,12 @@ const RolePermission = sequelize.define('roles_permisos', {
     rol_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: { model: Role, key: 'id' }
+        references: { model: Role, key: 'id', onDelete: 'CASCADE' }
     },
     permiso_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: { model: Permission, key: 'id' }
+        references: { model: Permission, key: 'id', onDelete: 'CASCADE' }
     }
 }, {
     timestamps: false,

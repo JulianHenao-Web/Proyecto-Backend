@@ -8,12 +8,12 @@ const UserProject = sequelize.define('usuario_proyectos', {
     usuario_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: { model: User, key: 'id' }
+        references: { model: User, key: 'id', onDelete: 'CASCADE' }
     },
     proyecto_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: { model: Project, key: 'id' }
+        references: { model: Project, key: 'id', onDelete: 'CASCADE' }
     }
 }, {
     timestamps: false,
