@@ -11,7 +11,7 @@ sequelize.authenticate()
     .then(() => {
         console.log('Conectado a PostreSQL con Sequelize');
         app.listen(PORT, () => {
-            console.log('Servidor corriendo en http://localhost:${PORT}');
+            console.log(`Servidor corriendo en http://localhost:${PORT}`);
         });
     })
     .catch(err => console.error('Error conectando a la base de datos:', err));
