@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
-const User = require('../models/rolePermission.model');
+const User = require('../models/user.model');
 const RolePermission = require('../models/rolePermission.model');
 
 dotenv.config();
