@@ -33,7 +33,7 @@ exports.getAllProjects = async () => {
             include: [
                 { model: User, as: 'administrador', attributes: { exclude: ['password'] } }
             ],
-            order: [['nombre', 'ASC']]
+            order: [['id', 'ASC']] 
         });
  
         return projects;
