@@ -1,0 +1,7 @@
+# Use this workspace to collaborate
+workspace:
+  id: 1aed79b7-b1f7-4c55-870d-26b77377290f
+
+localResources:
+  collections:
+    - ../Proyecto-Backend.postman_collection.json
