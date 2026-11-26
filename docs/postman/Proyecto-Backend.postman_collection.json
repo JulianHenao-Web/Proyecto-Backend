@@ -1163,21 +1163,19 @@
                 "projects"
               ]
             },
-            "description": "",
+            "description": "Usa la variable tokenInvalido, que no es un JWT real.",
             "auth": {
-              "type": "noauth"
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenInvalido}}",
+                  "type": "string"
+                }
+              ]
             }
           },
           "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.request.headers.add({ key: 'Authorization', value: 'Bearer token.invalido.123' });"
-                ]
-              }
-            },
             {
               "listen": "test",
               "script": {
@@ -2455,6 +2453,10 @@
     {
       "key": "user2Password",
       "value": "Usuario1234"
+    },
+    {
+      "key": "tokenInvalido",
+      "value": "esto-no-es-un-jwt"
     },
     {
       "key": "adminToken",
