@@ -18,14 +18,7 @@ const Project = sequelize.define('proyectos', {
     }
 }, {
     timestamps: false,
-    tableName: 'proyectos',
-    hooks: {
-        afterCreate: (project, options) => {
-            if (project.fecha_creacion) {
-                project.fecha_creacion.setHours(project.fecha_creacion.getHours() - 5);
-            }
-        }
-    }
+    tableName: 'proyectos'
 });
 
 module.exports = Project;
