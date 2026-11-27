@@ -130,7 +130,9 @@ Cada capa tiene una sola responsabilidad: las rutas deciden *quién* puede entra
 
 ## Endpoints
 
-Todas las rutas empiezan con `/api`. Excepto el login, todas requieren el header `Authorization: Bearer <token>`.
+Todas las rutas empiezan con `/api/v1` (el prefijo que usa el frontend). También responden bajo `/api`, por compatibilidad. Excepto el login, todas requieren el header `Authorization: Bearer <token>`.
+
+Las listas de usuarios responden `{ "users": [...] }`, y al crear o editar un usuario la respuesta trae `{ "message": "...", "user": {...} }`.
 
 ### Autenticación
 
@@ -142,9 +144,9 @@ Todas las rutas empiezan con `/api`. Excepto el login, todas requieren el header
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
-| POST | `/users/create` | Crea un usuario a cargo del administrador autenticado. Body: `nombre`, `email`, `password` (mínimo 8 caracteres), `rol_id` |
-| GET | `/users` | Lista los usuarios a cargo del administrador. Filtro opcional: `?email=texto` |
-| GET | `/users/rol/:id` | Lista los usuarios de un rol que están a cargo del administrador |
+| POST | `/users/create` | Crea un usuario. Body: `nombre`, `email`, `password` (mínimo 8 caracteres), `rol_id` y, opcional, `administrador_id` (administrador a cargo; si no se envía, el autenticado) |
+| GET | `/users` | Lista los usuarios a cargo del administrador. Filtros opcionales: `?nombre=texto` y `?email=texto` (coincidencia parcial) |
+| GET | `/users/rol/:id` | Rol `1`: todos los administradores (para elegir responsable). Rol `2`: los usuarios a cargo del administrador autenticado |
 | PUT | `/users/update/:id` | Modifica un usuario a cargo del administrador. Body: `nombre`, `email`, `rol_id` o `administrador_id` |
 | DELETE | `/users/delete/:id` | Elimina un usuario a cargo del administrador |
 
@@ -189,7 +191,7 @@ Todos los errores responden en JSON: `{ "message": "..." }`.
 ## Cómo probar con Postman
 
 1. Abre Postman y usa **Import** con el archivo `docs/postman/Proyecto-Backend.postman_collection.json`.
-2. En la colección, pestaña **Variables**, revisa `baseUrl` (por defecto `http://localhost:3000/api`) y las credenciales. Si no usaste `npm run seed`, cámbialas por las de tus usuarios.
+2. En la colección, pestaña **Variables**, revisa `baseUrl` (por defecto `http://localhost:3000/api/v1`) y las credenciales. Si no usaste `npm run seed`, cámbialas por las de tus usuarios.
 3. Ejecuta la carpeta **00 - Autenticación**: los logins guardan automáticamente los tokens y los ids en variables.
 4. Ejecuta en orden **01 - CRUD de proyectos**, **02 - Casos de error** y **03 - CRUD de usuarios**, petición por petición o con **Run collection**.
 

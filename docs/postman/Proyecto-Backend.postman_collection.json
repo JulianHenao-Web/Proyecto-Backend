@@ -1891,8 +1891,127 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Responde 201', () => pm.response.to.have.status(201));",
-                  "pm.test('No devuelve la contraseña', () => pm.expect(pm.response.json()).to.not.have.property('password'));",
-                  "pm.collectionVariables.set('newUserId', pm.response.json().id);"
+                  "pm.test('Mensaje: creado', () => pm.expect(pm.response.json().message).to.include('creado'));",
+                  "pm.test('Devuelve el usuario sin la contraseña', () => { const u = pm.response.json().user; pm.expect(u).to.have.property('id'); pm.expect(u).to.not.have.property('password'); });",
+                  "pm.collectionVariables.set('newUserId', pm.response.json().user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear usuario indicando el administrador responsable",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "create"
+              ]
+            },
+            "description": "El frontend envía administrador_id. Debe existir y ser administrador.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario a cargo de otro admin\",\n  \"email\": \"{{newUser2Email}}\",\n  \"password\": \"Prueba1234\",\n  \"rol_id\": 2,\n  \"administrador_id\": {{admin2Id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('newUser2Email', 'prueba2-' + Date.now() + '@demo.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Queda a cargo del administrador indicado', () => pm.expect(String(pm.response.json().user.administrador_id)).to.eql(String(pm.collectionVariables.get('admin2Id'))));",
+                  "pm.collectionVariables.set('newUser2Id', pm.response.json().user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Error: administrador_id que no es administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "create"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"X\",\n  \"email\": \"x@demo.com\",\n  \"password\": \"Prueba1234\",\n  \"rol_id\": 2,\n  \"administrador_id\": {{userId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Mensaje: rol de Administrador', () => pm.expect(pm.response.json().message).to.include('rol de Administrador'));"
                 ]
               }
             }
@@ -1912,7 +2031,7 @@
                 "users"
               ]
             },
-            "description": "",
+            "description": "GET /users. Responde { users: [...] } con los usuarios a cargo del administrador.",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -1931,7 +2050,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Responde 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Incluye el usuario creado', () => pm.expect(pm.response.json().some(u => u.id == pm.collectionVariables.get('newUserId'))).to.be.true);"
+                  "pm.test('Incluye el usuario creado', () => pm.expect(pm.response.json().users.some(u => u.id == pm.collectionVariables.get('newUserId'))).to.be.true);"
                 ]
               }
             }
@@ -1975,14 +2094,64 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Todos coinciden con el filtro', () => { const l = pm.response.json().users; pm.expect(l).to.not.be.empty; l.forEach(u => pm.expect(u.email).to.include('prueba')); });"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Listar usuarios por rol",
+          "name": "Listar mis usuarios filtrando por nombre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?nombre=Usuario%20de%20prueba&email=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Usuario%20de%20prueba"
+                },
+                {
+                  "key": "email",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "El frontend envía nombre y email (puede ir vacío).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Todos coinciden con el nombre', () => { const l = pm.response.json().users; pm.expect(l).to.not.be.empty; l.forEach(u => pm.expect(u.nombre).to.include('Usuario de prueba')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar usuarios por rol (rol 2)",
           "request": {
             "method": "GET",
             "header": [],
@@ -2015,7 +2184,49 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve solo usuarios regulares', () => pm.response.json().users.forEach(u => pm.expect(u.rol_id).to.eql(2)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar administradores (rol 1)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/rol/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "rol",
+                "1"
+              ]
+            },
+            "description": "Sirve para elegir el administrador responsable al crear o editar un usuario.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve administradores, incluido el autenticado', () => { const l = pm.response.json().users; l.forEach(u => pm.expect(u.rol_id).to.eql(1)); pm.expect(l.some(u => u.id == pm.collectionVariables.get('adminId'))).to.be.true; });"
                 ]
               }
             }
@@ -2070,7 +2281,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Responde 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Nombre actualizado', () => pm.expect(pm.response.json().nombre).to.eql('Usuario actualizado'));"
+                  "pm.test('Mensaje: actualizado', () => pm.expect(pm.response.json().message).to.include('actualizado'));",
+                  "pm.test('Nombre actualizado', () => pm.expect(pm.response.json().user.nombre).to.eql('Usuario actualizado'));"
                 ]
               }
             }
@@ -2112,6 +2324,46 @@
                 "exec": [
                   "pm.test('Responde 200', () => pm.response.to.have.status(200));",
                   "pm.test('Mensaje: eliminado', () => pm.expect(pm.response.json().message).to.include('eliminado'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Limpieza: eliminar el segundo usuario de prueba",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/delete/{{newUser2Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "delete",
+                "{{newUser2Id}}"
+              ]
+            },
+            "description": "Lo elimina el administrador 2, que es quien lo tiene a cargo.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin2Token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
                 ]
               }
             }
@@ -2420,7 +2672,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000/api"
+      "value": "http://localhost:3000/api/v1"
     },
     {
       "key": "adminEmail",
@@ -2504,6 +2756,14 @@
     },
     {
       "key": "newUserEmail",
+      "value": ""
+    },
+    {
+      "key": "newUser2Id",
+      "value": ""
+    },
+    {
+      "key": "newUser2Email",
       "value": ""
     }
   ]

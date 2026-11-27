@@ -16,9 +16,12 @@ app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
 
-app.use('/api', authRoutes);
-app.use('/api', userRoutes);
-app.use('/api', projectRoutes);
+// La API responde bajo /api/v1 (lo que espera el frontend) y también bajo /api (compatibilidad con Postman)
+const PREFIJOS = ['/api/v1', '/api'];
+
+app.use(PREFIJOS, authRoutes);
+app.use(PREFIJOS, userRoutes);
+app.use(PREFIJOS, projectRoutes);
 
 // Siempre al final: primero las rutas, luego "no encontrada" y por último el manejador de errores
 app.use(notFound);

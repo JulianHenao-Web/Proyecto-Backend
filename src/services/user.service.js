@@ -39,8 +39,9 @@ const assertManagedBy = (user, adminId, accion) => {
     }
 };
 
-// administrador_id = id del administrador que crea el usuario (sale del JWT)
-exports.createUser = async (nombre, email, password, rol_id, administrador_id) => {
+// creador_id = administrador que hace la petición (sale del JWT)
+// administrador_id = administrador a cargo del nuevo usuario (opcional; si no llega, es el creador)
+exports.createUser = async (nombre, email, password, rol_id, creador_id, administrador_id) => {
     const nombreLimpio = textoObligatorio(nombre, 'El nombre');
     const emailLimpio = validarEmail(email);
     validarPassword(password);
@@ -51,6 +52,19 @@ exports.createUser = async (nombre, email, password, rol_id, administrador_id) =
         throw new HttpError(409, 'El usuario ya existe');
     }
 
+    // Si se indica otro administrador, debe existir y tener rol de Administrador
+    let responsableId = creador_id;
+    if (administrador_id !== undefined && administrador_id !== null && administrador_id !== '') {
+        const responsable = await User.findByPk(parseId(administrador_id, 'El id del administrador'));
+        if (!responsable) {
+            throw new HttpError(404, 'El administrador indicado no existe');
+        }
+        if (responsable.rol_id !== ROLES.ADMIN) {
+            throw new HttpError(403, 'El usuario indicado debe tener el rol de Administrador');
+        }
+        responsableId = responsable.id;
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     return User.create({
@@ -58,7 +72,7 @@ exports.createUser = async (nombre, email, password, rol_id, administrador_id) =
         email: emailLimpio,
         password: hashedPassword,
         rol_id: rol,
-        administrador_id
+        administrador_id: responsableId
     });
 };
 
@@ -111,10 +125,14 @@ exports.updateUser = async (id, nombre, email, rol_id, administrador_id, admin_f
     return sinPassword(user);
 };
 
-// Lista los usuarios de un administrador; `email` filtra por coincidencia parcial
-exports.getAllUsersByAdministradorId = async (administrador_id, email) => {
+// Lista los usuarios de un administrador. filtros = { nombre, email }: coincidencia parcial, sin distinguir mayúsculas
+exports.getAllUsersByAdministradorId = async (administrador_id, filtros = {}) => {
+    const { nombre, email } = filtros;
     const where = { administrador_id };
 
+    if (nombre) {
+        where.nombre = { [Op.iLike]: `%${nombre}%` };
+    }
     if (email) {
         where.email = { [Op.iLike]: `%${email}%` };
     }
@@ -151,12 +169,15 @@ exports.deleteUser = async (id, admin_from_token) => {
     return { message: 'Usuario eliminado correctamente' };
 };
 
-// Lista los usuarios de un rol que están a cargo del administrador que hace la petición
+// Lista los usuarios de un rol.
+// - Rol Administrador: todos los administradores (se necesitan para elegir el responsable de un usuario o proyecto).
+// - Rol Usuario: solo los que están a cargo del administrador que hace la petición.
 exports.getAllUsersByRolId = async (rol_id, administrador_id) => {
     const rol = validarRol(rol_id);
+    const where = rol === ROLES.ADMIN ? { rol_id: rol } : { rol_id: rol, administrador_id };
 
     return User.findAll({
-        where: { rol_id: rol, administrador_id },
+        where,
         attributes: { exclude: ['password'] },
         order: [['nombre', 'ASC']]
     });
